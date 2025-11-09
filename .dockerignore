@@ -1,0 +1,10 @@
+node_modules
+dist
+.git
+*.log
+Dockerfile.new
+README.md
+package-lock.json
+
+# Allow nginx.conf for copy into image (remove line if present)
+# If you want to exclude, then COPY from build context won't find it.
