@@ -298,10 +298,10 @@ export default function App() {
         <div className="bg-white p-4 rounded-2xl shadow">
           <h3 className="font-semibold mb-4 text-center">Lacuna de Desempenho (Custo)</h3>
           <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={trendData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+            <BarChart data={trendData} margin={{ top: 5, right: 5, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" fontSize={12} />
-              <YAxis domain={[0, 'dataMax + 0.2']} />
+              <YAxis domain={[0, 1.5]} ticks={[0, 0.5, 1.0, 1.5]} />
               <Tooltip formatter={(value) => Number(value).toFixed(3)} />
               <Legend wrapperStyle={{ fontSize: "12px" }} />
               <ReferenceLine y={1.0} stroke="#b0a0a0" strokeDasharray="3 3">
@@ -317,7 +317,7 @@ export default function App() {
         <div className="bg-white p-4 rounded-2xl shadow">
           <h3 className="font-semibold mb-4 text-center">Projeção de Custo (Orçado vs. Projetado)</h3>
           <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={costProjectionData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+            <BarChart data={costProjectionData} margin={{ top: 5, right: 5, left: 60, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" fontSize={12} />
               <YAxis tickFormatter={currencyFormatter} fontSize={12} />
@@ -333,10 +333,10 @@ export default function App() {
         <div className="bg-white p-4 rounded-2xl shadow">
           <h3 className="font-semibold mb-4 text-center">Projeção de Prazo (Planejado vs. Projetado)</h3>
           <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={scheduleProjectionData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+            <BarChart data={scheduleProjectionData} margin={{ top: 5, right: 5, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" fontSize={12} />
-              <YAxis label={{ value: 'Meses', angle: -90, position: 'insideLeft', fontSize: 12, offset: 10 }} fontSize={12} />
+              <YAxis label={{ value: 'Meses', angle: -90, position: 'insideLeft', fontSize: 12, offset: 0 }} fontSize={12} />
               <Tooltip formatter={(value) => `${Number(value).toFixed(1)} meses`} />
               <Legend wrapperStyle={{ fontSize: "12px" }} />
               <Bar dataKey="Planejado (Meses)" fill="#8884d8" />
@@ -353,7 +353,6 @@ export default function App() {
           <table className="w-full text-sm">
             <thead className="text-gray-500 text-xs">
               <tr>
-                <th className="py-1">ID</th>
                 <th>Projeto</th>
                 <th>Risco</th>
                 <th>Prob.</th>
@@ -363,7 +362,6 @@ export default function App() {
             <tbody>
               {RISKS.map((r) => (
                 <tr key={r.id} className="border-b">
-                  <td className="py-1">{r.id}</td>
                   <td className="py-1">{r.project}</td>
                   <td className="py-1">{r.risk}</td>
                   <td className="py-1">{r.probability}</td>
