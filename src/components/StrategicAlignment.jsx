@@ -18,11 +18,11 @@ const PROJECTS = [
   }
 ];
 
-export default function StrategicAlignment({ title = 'Alinhamento Estratégico dos Projetos', inline }) {
+export default function StrategicAlignment({ title = 'Alinhamento Estratégico dos Projetos' }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className={inline ? 'flex-1' : 'bg-white rounded-2xl shadow p-4 border border-gray-100 w-full'}>
-      <div className={inline ? 'bg-white rounded-2xl shadow p-4 border border-gray-100 w-full' : ''}>
+    <div className={'bg-white rounded-2xl shadow p-4 border border-gray-100 w-full'}>
+      <div className={''}>
         <button
           className="flex items-center gap-2 w-full text-left focus:outline-none"
           onClick={() => setOpen((v) => !v)}

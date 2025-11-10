@@ -15,6 +15,8 @@ import {
   LineChart,
   Line,
   CartesianAxis,
+  ReferenceLine,
+  Label,
 } from "recharts";
 import dayjs from "dayjs";
 
@@ -23,50 +25,67 @@ const SUMMARY = {
   spiAvg: 0.9,
   cpiAvg: 0.79,
   criticalCount: 2,
-  eacTotal: 6320000,
+  // O EAC Total é a soma dos EACs individuais
+  eacTotal: 3235294 + 1437500 + 1642857, // 6315651
   period: "Nov 2025",
   manager: "Dimitri Delinski",
-  director: "Camila Delarosa"
+  director: "Camila Delarosa",
 };
 
+// Dados dos projetos enriquecidos com BAC, EAC, TCPI e Duração
 const PROJECTS = [
   {
     id: "GPP Tools",
     SPI: 0.85,
-    CPI: 0.77,
-    plannedTeam: 8,
-    actualTeam: 6,
-    plannedEnd: "2025-09-30",
-    estEnd: "2026-04-10",
+    CPI: 0.7727,
+    plannedTeam: 9,
+    actualTeam: 9,
+    plannedEnd: "2026-02-15",
+    estEnd: "2026-03-25",
     PV: 833333,
     EV: 708333,
     AC: 916667,
+    BAC: 2500000, // Custo Original (do CSV)
+    EAC: 3235294, // EAC (do CSV)
+    TCPI_BAC: 1.132, // (BAC - EV) / (BAC - AC)
+    plannedDuration: 9, // Duração Original (do CSV)
+    estDuration: 10.59, // Projeção de Prazo (do CSV)
     alignment: ["Processos Internos", "Financeiro"],
   },
   {
     id: "Plataforma",
     SPI: 0.8,
-    CPI: 0.7,
+    CPI: 0.6956,
     plannedTeam: 7,
-    actualTeam: 4,
-    plannedEnd: "2025-08-31",
-    estEnd: "2026-01-15",
+    actualTeam: 5,
+    plannedEnd: "2026-03-12",
+    estEnd: "2026-05-12",
     PV: 500000,
     EV: 400000,
     AC: 575000,
+    BAC: 1000000, // Custo Original (do CSV)
+    EAC: 1437500, // EAC (do CSV)
+    TCPI_BAC: 1.412, // (BAC - EV) / (BAC - AC)
+    plannedDuration: 8, // Duração Original (do CSV)
+    estDuration: 10.0, // Projeção de Prazo (do CSV)
     alignment: ["Clientes", "Processos Internos"],
   },
   {
     id: "Pesquisa",
     SPI: 1.05,
-    CPI: 0.91,
-    plannedTeam: 6,
-    actualTeam: 6,
-    plannedEnd: "2025-12-01",
-    estEnd: "2025-10-20",
+    CPI: 0.913,
+    plannedTeam: 8,
+    actualTeam: 8,
+    plannedEnd: "2026-05-09",
+    estEnd: "2025-04-25",
     PV: 375000,
     EV: 393750,
     AC: 431250,
+    BAC: 1500000, // Custo Original (do CSV)
+    EAC: 1642857, // EAC (do CSV)
+    TCPI_BAC: 1.035, // (BAC - EV) / (BAC - AC)
+    plannedDuration: 8, // Duração Original (do CSV)
+    estDuration: 7.62, // Projeção de Prazo (do CSV)
     alignment: ["Clientes", "Financeiro"],
   },
 ];
@@ -140,20 +159,33 @@ const NEXT = [
   },
 ];
 
+// Formatter para R$
+const currencyFormatter = (value) =>
+  `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+
+// Formatter para Meses
+const monthsFormatter = (value) => `${Number(value).toFixed(1)}m`;
+
+
 export default function App() {
-  const scatterData = PROJECTS.map((p) => ({ x: p.SPI, y: p.CPI, name: p.id }));
-  const barData = PROJECTS.map((p) => ({ name: p.id, SPI: p.SPI, CPI: p.CPI }));
-  const capacityData = PROJECTS.map((p) => ({
+  // Dados para os gráficos de tendência
+  const trendData = PROJECTS.map((p) => ({
     name: p.id,
-    planned: p.plannedTeam,
-    actual: p.actualTeam,
+    "CPI Atual": p.CPI,
+    "TCPI (Meta BAC)": p.TCPI_BAC,
   }));
-  const trend = [
-    { month: "Aug", SPI: 0.95, CPI: 0.98 },
-    { month: "Sep", SPI: 0.92, CPI: 0.94 },
-    { month: "Oct", SPI: 0.91, CPI: 0.88 },
-    { month: "Nov", SPI: SUMMARY.spiAvg, CPI: SUMMARY.cpiAvg },
-  ];
+
+  const costProjectionData = PROJECTS.map((p) => ({
+    name: p.id,
+    "Orçado (BAC)": p.BAC,
+    "Projetado (EAC)": p.EAC,
+  }));
+
+  const scheduleProjectionData = PROJECTS.map((p) => ({
+    name: p.id,
+    "Planejado (Meses)": p.plannedDuration,
+    "Projetado (Meses)": p.estDuration,
+  }));
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -162,26 +194,31 @@ export default function App() {
           Status Report — Portfólio GPP 2025
         </h1>
         <p className="text-sm text-gray-600">
-          Período: {SUMMARY.period} • Gerente: {SUMMARY.manager} • Diretora Executiva: {SUMMARY.director}
+          Período: {SUMMARY.period} • Gerente: {SUMMARY.manager} • Diretora
+          Executiva: {SUMMARY.director}
         </p>
       </header>
 
       {/* Objetivo do Portfólio e Alinhamento Estratégico em linha */}
-      <div className="flex gap-4 mb-6">
-        <PortfolioObjective inline />
-        <StrategicAlignment inline />
+      <div className="flex flex-col lg:flex-row gap-4 mb-6">
+        <div className="flex-1">
+          <PortfolioObjective />
+        </div>
+        <div className="flex-1">
+          <StrategicAlignment />
+        </div>
       </div>
 
       {/* Top KPIs */}
       <section className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
         <div className="bg-white p-4 rounded-2xl shadow">
-          <div className="text-sm text-gray-500">SPI Médio do Portfólio</div>
+          <div className="text-sm text-gray-500">SPI (Desempenho Prazo) Médio do Portfólio</div>
           <div className="text-3xl font-bold text-spi">
             {SUMMARY.spiAvg.toFixed(2)}
           </div>
         </div>
         <div className="bg-white p-4 rounded-2xl shadow">
-          <div className="text-sm text-gray-500">CPI Médio do Portfólio</div>
+          <div className="text-sm text-gray-500">CPI (Eficiência de Custo) Médio do Portfólio</div>
           <div className="text-3xl font-bold text-cpi">
             {SUMMARY.cpiAvg.toFixed(2)}
           </div>
@@ -193,9 +230,9 @@ export default function App() {
           </div>
         </div>
         <div className="bg-white p-4 rounded-2xl shadow">
-          <div className="text-sm text-gray-500">EAC Total Projetado</div>
+          <div className="text-sm text-gray-500">EAC (Custo Total) Projetado</div>
           <div className="text-3xl font-bold text-emerald-600">
-            R$ {Number(SUMMARY.eacTotal).toLocaleString()}
+            {currencyFormatter(SUMMARY.eacTotal)}
           </div>
         </div>
       </section>
@@ -203,7 +240,7 @@ export default function App() {
       {/* status with readable schedule and cost */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         <div className="bg-white p-4 rounded-2xl shadow">
-          <h3 className="font-semibold mb-2">Status & Cronograma (legível)</h3>
+          <h3 className="font-semibold mb-2">Status & Cronograma</h3>
           <table className="w-full text-sm">
             <thead className="text-gray-500 text-xs">
               <tr>
@@ -229,21 +266,21 @@ export default function App() {
         </div>
 
         <div className="bg-white p-4 rounded-2xl shadow">
-          <h3 className="font-semibold mb-2">Status & Custo (legível)</h3>
+          <h3 className="font-semibold mb-2">Status & Custo</h3>
           <table className="w-full text-sm">
             <thead className="text-gray-500 text-xs">
               <tr>
                 <th className="py-1">Projeto</th>
-                <th>PV (R$)</th>
-                <th>AC (R$)</th>
+                <th>PV - Valor Planejado (R$)</th>
+                <th>AC - Valor Gasto (R$)</th>
               </tr>
             </thead>
             <tbody>
               {PROJECTS.map((p) => (
                 <tr key={p.id} className="border-b">
                   <td className="py-2">{p.id}</td>
-                  <td className="py-2">R$ {Number(p.PV).toLocaleString()}</td>
-                  <td className="py-2">R$ {Number(p.AC).toLocaleString()}</td>
+                  <td className="py-2">{currencyFormatter(p.PV)}</td>
+                  <td className="py-2">{currencyFormatter(p.AC)}</td>
                 </tr>
               ))}
             </tbody>
@@ -251,51 +288,65 @@ export default function App() {
         </div>
       </section>
 
-      {/* trend and capacity */}
+      {/* NOVA SEÇÃO DE ANÁLISE DE TENDÊNCIA */}
+      <h2 className="text-2xl font-semibold text-gray-700 mb-4 mt-8">
+        Análise de Tendência
+      </h2>
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-        <div className="lg:col-span-2 bg-white p-4 rounded-2xl shadow">
-          <h3 className="font-semibold mb-2">
-            Análise de Tendência (SPI / CPI)
-          </h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={trend}>
+        
+        {/* Gráfico 1: Lacuna de Desempenho (CPI vs TCPI) */}
+        <div className="bg-white p-4 rounded-2xl shadow">
+          <h3 className="font-semibold mb-4 text-center">Lacuna de Desempenho (Custo)</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={trendData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis domain={[0.6, 1.05]} />
-              <Tooltip />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey="SPI"
-                stroke="#3498db"
-                strokeWidth={2}
-              />
-              <Line
-                type="monotone"
-                dataKey="CPI"
-                stroke="#f39c12"
-                strokeWidth={2}
-              />
-            </LineChart>
+              <XAxis dataKey="name" fontSize={12} />
+              <YAxis domain={[0, 'dataMax + 0.2']} />
+              <Tooltip formatter={(value) => Number(value).toFixed(3)} />
+              <Legend wrapperStyle={{ fontSize: "12px" }} />
+              <ReferenceLine y={1.0} stroke="#b0a0a0" strokeDasharray="3 3">
+                <Label value="Meta (1.0)" position="insideTopLeft" fontSize={10} fill="#b0a0a0" />
+              </ReferenceLine>
+              <Bar dataKey="CPI Atual" fill="#f87171" />
+              <Bar dataKey="TCPI (Meta BAC)" fill="#60a5fa" />
+            </BarChart>
           </ResponsiveContainer>
         </div>
 
+        {/* Gráfico 2: Projeção de Custo (Orçado vs. EAC) */}
         <div className="bg-white p-4 rounded-2xl shadow">
-          <h3 className="font-semibold mb-2">Capacidade e Recursos</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={capacityData} layout="vertical">
+          <h3 className="font-semibold mb-4 text-center">Projeção de Custo (Orçado vs. Projetado)</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={costProjectionData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" />
-              <YAxis dataKey="name" type="category" />
-              <Tooltip />
-              <Bar dataKey="planned" name="Planejado" fill="#7aa2ff" />
-              <Bar dataKey="actual" name="Atual" fill="#2d6cdf" />
+              <XAxis dataKey="name" fontSize={12} />
+              <YAxis tickFormatter={currencyFormatter} fontSize={12} />
+              <Tooltip formatter={currencyFormatter} />
+              <Legend wrapperStyle={{ fontSize: "12px" }} />
+              <Bar dataKey="Orçado (BAC)" fill="#82ca9d" />
+              <Bar dataKey="Projetado (EAC)" fill="#f87171" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Gráfico 3: Projeção de Prazo (Planejado vs. Projetado) */}
+        <div className="bg-white p-4 rounded-2xl shadow">
+          <h3 className="font-semibold mb-4 text-center">Projeção de Prazo (Planejado vs. Projetado)</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={scheduleProjectionData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" fontSize={12} />
+              <YAxis label={{ value: 'Meses', angle: -90, position: 'insideLeft', fontSize: 12, offset: 10 }} fontSize={12} />
+              <Tooltip formatter={(value) => `${Number(value).toFixed(1)} meses`} />
+              <Legend wrapperStyle={{ fontSize: "12px" }} />
+              <Bar dataKey="Planejado (Meses)" fill="#8884d8" />
+              <Bar dataKey="Projetado (Meses)" fill="#ffc658" />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </section>
 
-      {/* tables: risks, milestones, next steps */}
+      {/* tabelas: risks, milestones, next steps */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
         <div className="bg-white p-4 rounded-2xl shadow">
           <h3 className="font-semibold mb-2">Riscos</h3>
@@ -340,7 +391,7 @@ export default function App() {
                   <td className="py-1">{m.project}</td>
                   <td className="py-1">{m.milestone}</td>
                   <td className="py-1">{m.status}</td>
-                  <td className="py-1">{m.date}</td>
+                  <td className="py-1">{dayjs(m.date).format("DD/MM/YY")}</td>
                 </tr>
               ))}
             </tbody>
@@ -364,7 +415,7 @@ export default function App() {
                   <td className="py-1">{n.project}</td>
                   <td className="py-1">{n.action}</td>
                   <td className="py-1">{n.owner}</td>
-                  <td className="py-1">{n.due}</td>
+                  <td className="py-1">{dayjs(n.due).format("DD/MM/YY")}</td>
                 </tr>
               ))}
             </tbody>

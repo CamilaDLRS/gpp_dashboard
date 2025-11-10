@@ -6,12 +6,12 @@ import React, { useState } from 'react';
   - Estilos minimalistas usando Tailwind
   - Pode ser reutilizado futuramente recebendo o texto via props
 */
-export default function PortfolioObjective({ title = 'Objetivo Estratégico', objective, inline }) {
+export default function PortfolioObjective({ title = 'Objetivo Estratégico', objective }) {
   const [open, setOpen] = useState(false);
   const text = objective || 'Expandir e inovar a atuação da GPP na área de Engenharia de Software, por meio do desenvolvimento de soluções próprias, fortalecimento da base técnica e otimização dos processos internos, visando aumentar competitividade, reduzir dependências externas e ampliar a receita da empresa.';
   return (
-    <div className={inline ? 'flex-1' : 'bg-white rounded-2xl shadow p-4 border border-gray-100 w-full'}>
-      <div className={inline ? 'bg-white rounded-2xl shadow p-4 border border-gray-100 w-full' : ''}>
+    <div className={'bg-white rounded-2xl shadow p-4 border border-gray-100 w-full'}>
+      <div className={''}>
         <button
           className="flex items-center gap-2 w-full text-left focus:outline-none"
           onClick={() => setOpen((v) => !v)}
